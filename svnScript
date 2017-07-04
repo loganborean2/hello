@@ -1,0 +1,79 @@
+#!/bin/bash
+
+#get input file of every file to replace
+
+#get argument of the place to replace in
+ 
+# foreach input file, -find it
+#   foreach result from -find, diff it
+#	replace? yes no
+
+if [ "$#" -ne 1 ]
+then
+  echo "Usage: [dirToCopyTo] < [filesToCopy]"
+  exit 1
+fi
+
+while read fileToCopy
+do
+    echo '======================================'
+    echo '+                                    +'
+    echo '+                                    +'
+    echo '+                                    +'
+    echo '+'          $fileToCopy
+    echo '+                                    +'
+    echo '+                                    +'
+    echo '+                                    +'
+    echo '======================================'
+    fileNoPath="$(echo $fileToCopy | rev | cut -d/ -f1 | rev)"
+
+    newPlace="$(find $1 -name $fileNoPath)"
+
+    numResults="$(find $1 -name $fileNoPath | wc -l)"
+
+    if [ $numResults -eq 0 ]
+    then
+	echo $newPlace "not found... skipping"
+    elif [ $numResults -eq 1 ]
+    then
+
+	echo '==================================================================='
+	echo "Diffing: " $fileToCopy $newPlace
+	sdiff -s $fileToCopy $newPlace
+	echo 'continue? (y/n): '
+	read  choice </dev/tty
+	if [ "$choice" == "y" ]
+	then
+	    cp $fileToCopy $newPlace
+	else
+	    echo "SKIPPING"
+	fi
+
+    elif [ $numResults -gt 1 ]
+    then
+
+# There are multiple files witht that name
+	echo "MULTIPLE FILES CALLED " $fileNoPath ":"
+	echo "~~~~~~"
+	find $1 -name $fileNoPath
+	echo "~~~~~~"
+
+	find $1 -name $fileNoPath |
+	while IFS= read -r possibleDest; do
+
+	    echo '==================================================================='
+	    echo "Diffing: " $fileToCopy $possibleDest
+	    sdiff -s $fileToCopy $possibleDest
+	    echo 'continue? (y/n): '
+	    read  choice </dev/tty
+
+	    if [ "$choice" == "y" ]
+	    then
+	        cp $fileToCopy $possibleDest
+	    fi
+
+	done
+    fi
+    printf "\n\n\n\n\n\n"
+done
+
